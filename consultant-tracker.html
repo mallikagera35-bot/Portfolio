@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>SV reminders | Color-Coded Key Dates & Auto Reminders</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f0f4f8;
+            padding: 20px;
+            color: #1e293b;
+        }
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+        /* Header */
+        .header {
+            background: white;
+            border-radius: 28px;
+            padding: 16px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        h1 { font-size: 1.6rem; color: #1e4a6e; }
+        .offline-badge {
+            background: #e6f7f0;
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            color: #2c7a4d;
+        }
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .tab {
+            background: white;
+            border: none;
+            padding: 10px 28px;
+            font-weight: 600;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            color: #334155;
+        }
+        .tab.active {
+            background: #1e5a7a;
+            color: white;
+        }
+        /* Panels */
+        .panel {
+            display: none;
+            background: white;
+            border-radius: 28px;
+            padding: 24px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+        }
+        .panel.active {
+            display: block;
+        }
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 24px;
+            align-items: center;
+        }
+        button {
+            background: #f1f5f9;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 40px;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: 0.1s;
+        }
+        .btn-primary { background: #1e5a7a; color: white; }
+        .btn-primary:hover { background: #0f4662; }
+        .btn-excel { background: #2c7a4d; color: white; }
+        .btn-excel:hover { background: #22653f; }
+        input, select, textarea {
+            padding: 8px 14px;
+            border-radius: 28px;
+            border: 1px solid #cbd5e1;
+            font-size: 0.8rem;
+            background: white;
+        }
+        .search-box {
+            padding: 8px 16px;
+            width: 220px;
+        }
+        /* Tables */
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+        th {
+            text-align: left;
+            padding: 12px 10px;
+            background: #f8fafc;
+            font-weight: 600;
+        }
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: top;
+        }
+        /* Color coded badges */
+        .badge-job {
+            background-color: #89CFF0;
+            color: #0a3b4f;
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.7rem;
+        }
+        .badge-followup {
+            background-color: #FFCD9B;
+            color: #7a4a1a;
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.7rem;
+        }
+        .badge-custom {
+            background-color: #d9e2e8;
+            color: #1f4e6e;
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+        }
+        /* Reminder cards */
+        .reminder-card {
+            border-radius: 20px;
+            padding: 18px;
+            margin-bottom: 14px;
+            border-left: 6px solid;
+        }
+        .reminder-job { background: #eef7fc; border-left-color: #89CFF0; }
+        .reminder-followup { background: #fff6e8; border-left-color: #FFCD9B; }
+        .reminder-custom { background: #f1f5f9; border-left-color: #94a3b8; }
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 32px;
+            max-width: 700px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 28px;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.8rem;
+        }
+        .key-dates-section {
+            background: #f9fefc;
+            padding: 16px;
+            border-radius: 24px;
+            margin: 16px 0;
+            border: 1px solid #cde3ed;
+        }
+        .key-date-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+            background: white;
+            padding: 10px;
+            border-radius: 20px;
+        }
+        .key-date-row input, .key-date-row textarea {
+            flex: 1;
+            min-width: 120px;
+        }
+        .flex-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        hr { margin: 12px 0; }
+        .note-text { font-size: 0.7rem; color: #4b5563; margin-top: 4px; }
+        @media (max-width: 700px) {
+            th, td { font-size: 0.7rem; padding: 8px 4px; }
+            .key-date-row { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>📋 Consultant Flow · Key Dates & Reminders</h1>
+        <div class="offline-badge">🔒 100% Local | No cloud</div>
+    </div>
+    <div class="tabs">
+        <button class="tab active" data-tab="meetings">1. Meeting Log (Key Dates)</button>
+        <button class="tab" data-tab="reminders">2. Smart Reminders ↑ Sorted</button>
+        <button class="tab" data-tab="candidates">3. Candidates + Excel</button>
+    </div>
+
+    <!-- PANEL 1: MEETINGS -->
+    <div id="meetingsPanel" class="panel active">
+        <div class="toolbar">
+            <button class="btn-primary" id="newMeetingBtn">+ New Meeting / Opportunity</button>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="searchMeetings" placeholder="🔍 Search client..." class="search-box">
+                <button id="exportMeetingsBtn" class="btn-excel">📎 Export Meetings CSV</button>
+            </div>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr><th>Date</th><th>Client</th><th>Opportunity</th><th style="background:#89CFF020;">🔷 Job / Deadline</th><th style="background:#FFCD9B20;">🟠 Follow-Up</th><th>📌 Other Key Dates</th><th>Notes</th><th></th></tr>
+                </thead>
+                <tbody id="meetingsTbody"></tbody>
+            </table>
+        </div>
+        <div class="note-text" style="margin-top: 16px;">💡 At least ONE key date required. Job/Deadline = Blue (#89CFF0), Follow-Up = Orange (#FFCD9B). Custom dates auto appear in reminders.</div>
+    </div>
+
+    <!-- PANEL 2: REMINDERS (automated, ascending) -->
+    <div id="remindersPanel" class="panel">
+        <div class="toolbar">
+            <h3 style="font-size:1rem;">⏰ Upcoming tasks · nearest first</h3>
+            <button id="exportRemindersBtn" class="btn-excel">📎 Export Reminders CSV</button>
+        </div>
+        <div id="remindersList" style="max-height: 65vh; overflow-y: auto;"></div>
+    </div>
+
+    <!-- PANEL 3: CANDIDATES + IMPORT EXCEL -->
+    <div id="candidatesPanel" class="panel">
+        <div class="toolbar">
+            <button class="btn-primary" id="newCandidateBtn">+ Add Candidate</button>
+            <button id="importCandidatesBtn" class="btn-excel">📂 Import Candidates (CSV)</button>
+            <input type="file" id="candidateFileInput" accept=".csv" style="display:none;">
+            <input type="text" id="searchCandidates" placeholder="Search name, role..." class="search-box">
+            <button id="exportCandidatesBtn" class="btn-excel">📎 Export Candidates</button>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead><tr><th>Name</th><th>Role</th><th>Assessment</th><th>Linked Client/Opp</th><th>Status</th><th></th></tr></thead>
+                <tbody id="candidatesTbody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: MEETING -->
+<div id="meetingModal" class="modal">
+    <div class="modal-content">
+        <h3 style="margin-bottom: 16px;">✍️ Log Meeting & Key Dates</h3>
+        <input type="hidden" id="editMeetingId">
+        <div class="form-group"><label>📅 Meeting Date *</label><input type="date" id="meetDate"></div>
+        <div class="form-group"><label>🏢 Client / Person *</label><input type="text" id="clientName" placeholder="e.g., Olivia Chen (DataBank)"></div>
+        <div class="form-group"><label>🎯 Opportunity / Need</label><textarea id="opportunity" rows="2" placeholder="Describe what client wants, opening details"></textarea></div>
+        
+        <div class="key-dates-section">
+            <div style="font-weight:700; margin-bottom:12px;">📌 KEY DATES (fill at least one)</div>
+            <!-- Job Opening / Deadline (blue) -->
+            <div class="key-date-row" style="background:#eef7fc;">
+                <span class="badge-job">🔷 Job / Deadline</span>
+                <input type="date" id="jobDate" placeholder="Date">
+                <textarea id="jobNote" rows="1" placeholder="Note: role, offer expiry, etc" style="flex:2;"></textarea>
+            </div>
+            <!-- Follow-Up (orange) -->
+            <div class="key-date-row" style="background:#fff6e8;">
+                <span class="badge-followup">🟠 Follow-Up</span>
+                <input type="date" id="followDate" placeholder="Follow-up date">
+                <textarea id="followNote" rows="1" placeholder="Note: what to ask, relationship check" style="flex:2;"></textarea>
+            </div>
+            <!-- Custom dates container -->
+            <div id="customDatesContainer"></div>
+            <button type="button" id="addCustomDateBtn" style="background:#e2e8f0; margin-top:8px;">+ Add custom key date (your label)</button>
+        </div>
+
+        <div class="form-group"><label>📝 Additional Notes / Insights</label><textarea id="extraNotes" rows="2" placeholder="Budget, timeline, revenue potential, personal insights..."></textarea></div>
+        <div class="form-group"><label>Status</label><select id="meetingStatus"><option value="Open">Open</option><option value="Done">Done</option><option value="Stalled">Stalled</option></select></div>
+        <div class="flex-buttons"><button id="closeMeetingModal">Cancel</button><button id="saveMeetingBtn" class="btn-primary">Save → Auto Reminders</button></div>
+    </div>
+</div>
+
+<!-- MODAL: CANDIDATE -->
+<div id="candidateModal" class="modal">
+    <div class="modal-content">
+        <h3>👤 Candidate Profile</h3>
+        <input type="hidden" id="editCandidateId">
+        <div class="form-group"><label>Full name *</label><input type="text" id="candName"></div>
+        <div class="form-group"><label>Role / Title</label><input type="text" id="candRole"></div>
+        <div class="form-group"><label>My Assessment / Fit</label><textarea id="candAssessment" rows="2" placeholder="Strengths, red flags, motivation"></textarea></div>
+        <div class="form-group"><label>Linked Client / Opportunity</label><input type="text" id="linkedClient" placeholder="e.g., Olivia Chen / Head of Data"></div>
+        <div class="form-group"><label>Status</label><select id="candStatus"><option value="Active">Active</option><option value="Placed">Placed</option><option value="Dropped">Dropped</option></select></div>
+        <div class="flex-buttons"><button id="closeCandidateModal">Cancel</button><button id="saveCandidateBtn" class="btn-primary">Save</button></div>
+    </div>
+</div>
+
+<script>
+    // ---------- DATA ----------
+    let meetings = [];
+    let candidates = [];
+
+    // Load from localStorage
+    function loadData() {
+        const storedMeetings = localStorage.getItem('consultant_flow_meetings');
+        const storedCandidates = localStorage.getItem('consultant_flow_candidates');
+        if(storedMeetings) {
+            meetings = JSON.parse(storedMeetings);
+        } else {
+            // Demo data with both key dates
+            const today = new Date();
+            const deadline = new Date(); deadline.setDate(today.getDate() + 22);
+            const follow = new Date(); follow.setDate(today.getDate() + 10);
+            meetings = [{
+                id: Date.now(),
+                meetingDate: today.toISOString().slice(0,10),
+                client: "Olivia Chen (DataBank)",
+                opportunity: "Head of Analytics opening, needs exclusive shortlist",
+                jobDate: deadline.toISOString().slice(0,10),
+                jobNote: "Director level, budget $200k, fintech required",
+                followDate: follow.toISOString().slice(0,10),
+                followNote: "Send 2 senior profiles + market insights",
+                customDates: [{ label: "Recruiter sync", date: new Date(today.setDate(today.getDate()+5)).toISOString().slice(0,10), note: "internal alignment" }],
+                extraNotes: "Decision maker is CTO, fast-moving",
+                status: "Open"
+            }];
+        }
+        if(storedCandidates) candidates = JSON.parse(storedCandidates);
+        else candidates = [];
+        saveToLocal();
+        renderMeetings();
+        renderCandidates();
+        renderReminders();
+    }
+
+    function saveToLocal() {
+        localStorage.setItem('consultant_flow_meetings', JSON.stringify(meetings));
+        localStorage.setItem('consultant_flow_candidates', JSON.stringify(candidates));
+    }
+
+    function saveAll() {
+        saveToLocal();
+        renderMeetings();
+        renderCandidates();
+        renderReminders();
+    }
+
+    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+
+    // Render Meetings Table
+    function renderMeetings() {
+        const search = document.getElementById('searchMeetings').value.toLowerCase();
+        let filtered = meetings.filter(m => m.client.toLowerCase().includes(search) || (m.opportunity || '').toLowerCase().includes(search));
+        const tbody = document.getElementById('meetingsTbody');
+        tbody.innerHTML = '';
+        for(let m of filtered) {
+            let row = tbody.insertRow();
+            row.insertCell(0).innerText = m.meetingDate || '-';
+            row.insertCell(1).innerHTML = `<strong>${escapeHtml(m.client)}</strong>`;
+            row.insertCell(2).innerText = (m.opportunity || '').substring(0, 70);
+            // Job/Deadline cell (blue)
+            let jobHtml = m.jobDate ? `<span class="badge-job">📅 ${m.jobDate}</span><div class="note-text">${escapeHtml(m.jobNote||'')}</div>` : '—';
+            row.insertCell(3).innerHTML = jobHtml;
+            // Follow-up cell (orange)
+            let followHtml = m.followDate ? `<span class="badge-followup">📞 ${m.followDate}</span><div class="note-text">${escapeHtml(m.followNote||'')}</div>` : '—';
+            row.insertCell(4).innerHTML = followHtml;
+            // Custom dates
+            let customHtml = '';
+            if(m.customDates && m.customDates.length) {
+                m.customDates.forEach(cd => {
+                    customHtml += `<div><span class="badge-custom">${escapeHtml(cd.label)}: ${cd.date}</span><div class="note-text">${escapeHtml(cd.note||'')}</div></div>`;
+                });
+            } else customHtml = '—';
+            row.insertCell(5).innerHTML = customHtml;
+            row.insertCell(6).innerText = (m.extraNotes || '').substring(0, 60);
+            let actions = row.insertCell(7);
+            let editBtn = document.createElement('button'); editBtn.innerText = '✏️'; editBtn.style.background='none'; editBtn.style.cursor='pointer';
+            editBtn.onclick = () => openMeetingModal(m);
+            let delBtn = document.createElement('button'); delBtn.innerText = '🗑️'; delBtn.style.background='none'; delBtn.style.cursor='pointer';
+            delBtn.onclick = () => { if(confirm('Delete meeting?')) { meetings = meetings.filter(x => x.id !== m.id); saveAll(); } };
+            actions.appendChild(editBtn); actions.appendChild(delBtn);
+        }
+    }
+
+    // Render Reminders: gather all key dates, sort ascending, display with note + client
+    function renderReminders() {
+        let reminders = [];
+        const today = new Date(); today.setHours(0,0,0,0);
+        for(let m of meetings) {
+            if(m.status === 'Done') continue;
+            // Job deadline
+            if(m.jobDate) {
+                reminders.push({
+                    sortDate: new Date(m.jobDate),
+                    client: m.client,
+                    typeLabel: "🔷 Job / Deadline",
+                    dateStr: m.jobDate,
+                    note: m.jobNote || '',
+                    opp: m.opportunity,
+                    colorClass: "reminder-job"
+                });
+            }
+            // Follow-up
+            if(m.followDate) {
+                reminders.push({
+                    sortDate: new Date(m.followDate),
+                    client: m.client,
+                    typeLabel: "🟠 Follow-Up",
+                    dateStr: m.followDate,
+                    note: m.followNote || '',
+                    opp: m.opportunity,
+                    colorClass: "reminder-followup"
+                });
+            }
+            // Custom dates
+            if(m.customDates) {
+                m.customDates.forEach(cd => {
+                    if(cd.date) {
+                        reminders.push({
+                            sortDate: new Date(cd.date),
+                            client: m.client,
+                            typeLabel: `📌 ${cd.label}`,
+                            dateStr: cd.date,
+                            note: cd.note || '',
+                            opp: m.opportunity,
+                            colorClass: "reminder-custom"
+                        });
+                    }
+                });
+            }
+        }
+        // filter invalid dates and sort ascending
+        reminders = reminders.filter(r => !isNaN(r.sortDate));
+        reminders.sort((a,b) => a.sortDate - b.sortDate);
+        const container = document.getElementById('remindersList');
+        if(reminders.length === 0) {
+            container.innerHTML = '<div style="background:#f1f5f9; border-radius:28px; padding:48px; text-align:center;">✨ No pending reminders. Add meetings with Job/Deadline, Follow-Up, or Custom key dates.</div>';
+            return;
+        }
+        container.innerHTML = reminders.map(r => {
+            const isPast = r.sortDate < new Date() ? true : false;
+            return `
+            <div class="reminder-card ${r.colorClass}">
+                <div style="display:flex; justify-content:space-between; flex-wrap:wrap; margin-bottom:8px;">
+                    <strong>${r.typeLabel}</strong>
+                    <span style="background:white; padding:2px 12px; border-radius:30px; font-size:0.7rem;">${r.dateStr} ${isPast ? '⚠️ overdue' : ''}</span>
+                </div>
+                <div><strong>${escapeHtml(r.client)}</strong></div>
+                ${r.opp ? `<div style="font-size:0.75rem; color:#2c6979;">🎯 ${escapeHtml(r.opp.substring(0,100))}</div>` : ''}
+                <div style="margin-top:8px; background:#ffffffaa; border-radius:16px; padding:8px; font-size:0.75rem;">
+                    📝 <strong>Note:</strong> ${escapeHtml(r.note || '—')}
+                </div>
+                <div style="margin-top:10px;">
+                    <button class="copyMsgBtn" data-client="${escapeHtml(r.client)}" data-type="${escapeHtml(r.typeLabel)}" data-date="${r.dateStr}" data-note="${escapeHtml(r.note)}" style="background:#1e5a7a; color:white; border:none; padding:4px 16px; border-radius:40px; font-size:0.7rem;">📋 Copy Message</button>
+                </div>
+            </div>`;
+        }).join('');
+        // attach copy handlers
+        document.querySelectorAll('.copyMsgBtn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                let client = btn.getAttribute('data-client');
+                let type = btn.getAttribute('data-type');
+                let date = btn.getAttribute('data-date');
+                let note = btn.getAttribute('data-note');
+                let msg = `Hi ${client.split(' ')[0]}, regarding ${type} on ${date}. Note: ${note}. Let's touch base.`;
+                navigator.clipboard.writeText(msg);
+                alert("✅ Message copied to clipboard.");
+            });
+        });
+    }
+
+    // Candidates render
+    function renderCandidates() {
+        const search = document.getElementById('searchCandidates').value.toLowerCase();
+        let filtered = candidates.filter(c => c.name.toLowerCase().includes(search) || (c.role || '').toLowerCase().includes(search));
+        const tbody = document.getElementById('candidatesTbody');
+        tbody.innerHTML = '';
+        for(let c of filtered) {
+            let row = tbody.insertRow();
+            row.insertCell(0).innerHTML = `<strong>${escapeHtml(c.name)}</strong>`;
+            row.insertCell(1).innerText = c.role || '—';
+            row.insertCell(2).innerText = (c.assessment || '').substring(0, 70);
+            row.insertCell(3).innerText = c.linkedClient || '—';
+            row.insertCell(4).innerHTML = `<span style="background:#e2e8f0; padding:2px 12px; border-radius:20px;">${c.status}</span>`;
+            let actions = row.insertCell(5);
+            let editBtn = document.createElement('button'); editBtn.innerText = '✏️'; editBtn.style.background='none';
+            editBtn.onclick = () => openCandidateModal(c);
+            let delBtn = document.createElement('button'); delBtn.innerText = '🗑️'; delBtn.style.background='none';
+            delBtn.onclick = () => { if(confirm('Delete candidate?')) { candidates = candidates.filter(x => x.id !== c.id); saveAll(); } };
+            actions.appendChild(editBtn); actions.appendChild(delBtn);
+        }
+    }
+
+    // ----- Meeting Modal with custom dates dynamic -----
+    function addCustomDateRow(label='', date='', note='') {
+        const container = document.getElementById('customDatesContainer');
+        const div = document.createElement('div');
+        div.className = 'key-date-row';
+        div.innerHTML = `
+            <input type="text" placeholder="Label (e.g., 'Final Interview')" value="${escapeHtml(label)}" style="width:140px;" class="customLabel">
+            <input type="date" value="${date}" class="customDate">
+            <textarea rows="1" placeholder="Note about this key date" class="customNote" style="flex:2;">${escapeHtml(note)}</textarea>
+            <button type="button" class="removeCustomBtn" style="background:#fee2e2; padding:4px 12px;">✖️</button>
+        `;
+        div.querySelector('.removeCustomBtn').onclick = () => div.remove();
+        container.appendChild(div);
+    }
+
+    function collectCustomDates() {
+        const rows = document.querySelectorAll('#customDatesContainer .key-date-row');
+        let customs = [];
+        rows.forEach(row => {
+            let label = row.querySelector('.customLabel').value.trim();
+            let date = row.querySelector('.customDate').value;
+            let note = row.querySelector('.customNote').value;
+            if(date && label) customs.push({ label, date, note });
+            else if(date && !label) customs.push({ label: "Key Date", date, note });
+        });
+        return customs;
+    }
+
+    function openMeetingModal(meet = null) {
+        document.getElementById('editMeetingId').value = meet ? meet.id : '';
+        document.getElementById('meetDate').value = meet ? meet.meetingDate : new Date().toISOString().slice(0,10);
+        document.getElementById('clientName').value = meet ? meet.client : '';
+        document.getElementById('opportunity').value = meet ? meet.opportunity : '';
+        document.getElementById('jobDate').value = meet ? meet.jobDate : '';
+        document.getElementById('jobNote').value = meet ? meet.jobNote || '' : '';
+        document.getElementById('followDate').value = meet ? meet.followDate : '';
+        document.getElementById('followNote').value = meet ? meet.followNote || '' : '';
+        document.getElementById('extraNotes').value = meet ? meet.extraNotes || '' : '';
+        document.getElementById('meetingStatus').value = meet ? meet.status : 'Open';
+        // Clear and rebuild custom dates
+        const container = document.getElementById('customDatesContainer');
+        container.innerHTML = '';
+        if(meet && meet.customDates && meet.customDates.length) {
+            meet.customDates.forEach(cd => addCustomDateRow(cd.label, cd.date, cd.note));
+        } else {
+            addCustomDateRow('', '', '');
+        }
+        document.getElementById('meetingModal').style.display = 'flex';
+    }
+
+    function saveMeeting() {
+        let id = document.getElementById('editMeetingId').value;
+        const jobDate = document.getElementById('jobDate').value;
+        const followDate = document.getElementById('followDate').value;
+        const customDates = collectCustomDates();
+        if(!jobDate && !followDate && customDates.length === 0) {
+            alert("❌ At least ONE key date required (Job/Deadline, Follow-Up, or Custom).");
+            return;
+        }
+        let meeting = {
+            id: id ? parseInt(id) : Date.now(),
+            meetingDate: document.getElementById('meetDate').value,
+            client: document.getElementById('clientName').value,
+            opportunity: document.getElementById('opportunity').value,
+            jobDate: jobDate,
+            jobNote: document.getElementById('jobNote').value,
+            followDate: followDate,
+            followNote: document.getElementById('followNote').value,
+            customDates: customDates,
+            extraNotes: document.getElementById('extraNotes').value,
+            status: document.getElementById('meetingStatus').value
+        };
+        if(!meeting.client) { alert("Client name required"); return; }
+        if(id) {
+            let idx = meetings.findIndex(m => m.id == id);
+            if(idx !== -1) meetings[idx] = meeting;
+        } else meetings.push(meeting);
+        saveAll();
+        document.getElementById('meetingModal').style.display = 'none';
+    }
+
+    // Candidate modal
+    function openCandidateModal(cand=null) {
+        document.getElementById('editCandidateId').value = cand ? cand.id : '';
+        document.getElementById('candName').value = cand ? cand.name : '';
+        document.getElementById('candRole').value = cand ? cand.role : '';
+        document.getElementById('candAssessment').value = cand ? cand.assessment : '';
+        document.getElementById('linkedClient').value = cand ? cand.linkedClient : '';
+        document.getElementById('candStatus').value = cand ? cand.status : 'Active';
+        document.getElementById('candidateModal').style.display = 'flex';
+    }
+    function saveCandidate() {
+        let id = document.getElementById('editCandidateId').value;
+        let cand = {
+            id: id ? parseInt(id) : Date.now(),
+            name: document.getElementById('candName').value,
+            role: document.getElementById('candRole').value,
+            assessment: document.getElementById('candAssessment').value,
+            linkedClient: document.getElementById('linkedClient').value,
+            status: document.getElementById('candStatus').value
+        };
+        if(!cand.name) { alert("Candidate name required"); return; }
+        if(id) {
+            let idx = candidates.findIndex(c => c.id == id);
+            if(idx !== -1) candidates[idx] = cand;
+        } else candidates.push(cand);
+        saveAll();
+        document.getElementById('candidateModal').style.display = 'none';
+    }
+
+    // Excel exports
+    function exportMeetingsCSV() {
+        let headers = ["id","meetingDate","client","opportunity","jobDate","jobNote","followDate","followNote","extraNotes","status"];
+        let rows = meetings.map(m => [m.id, m.meetingDate, m.client, m.opportunity, m.jobDate, m.jobNote, m.followDate, m.followNote, m.extraNotes, m.status]);
+        let csv = [headers, ...rows].map(row => row.map(cell => `"${String(cell||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+        downloadCSV(csv, 'meetings_export.csv');
+    }
+    function exportRemindersCSV() {
+        let remindersFlat = [];
+        meetings.forEach(m => {
+            if(m.status === 'Done') return;
+            if(m.jobDate) remindersFlat.push({ type: "Job/Deadline", client: m.client, date: m.jobDate, note: m.jobNote });
+            if(m.followDate) remindersFlat.push({ type: "Follow-Up", client: m.client, date: m.followDate, note: m.followNote });
+            if(m.customDates) m.customDates.forEach(cd => remindersFlat.push({ type: cd.label, client: m.client, date: cd.date, note: cd.note }));
+        });
+        remindersFlat.sort((a,b)=> (a.date||'').localeCompare(b.date||''));
+        let headers = ["type","client","date","note"];
+        let rows = remindersFlat.map(r => [r.type, r.client, r.date, r.note]);
+        let csv = [headers, ...rows].map(row => row.map(cell => `"${String(cell||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+        downloadCSV(csv, 'reminders_export.csv');
+    }
+    function exportCandidatesCSV() {
+        let headers = ["id","name","role","assessment","linkedClient","status"];
+        let rows = candidates.map(c => [c.id, c.name, c.role, c.assessment, c.linkedClient, c.status]);
+        let csv = [headers, ...rows].map(row => row.map(cell => `"${String(cell||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+        downloadCSV(csv, 'candidates_export.csv');
+    }
+    function downloadCSV(csv, filename) {
+        const blob = new Blob([csv], {type: 'text/csv'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+    // Import candidates from CSV
+    function importCandidatesFromCSV(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const text = e.target.result;
+            const lines = text.split('\n').filter(l => l.trim());
+            if(lines.length < 2) return;
+            const headers = lines[0].toLowerCase().split(',').map(h => h.replace(/"/g,'').trim());
+            const nameIdx = headers.findIndex(h => h.includes('name'));
+            const roleIdx = headers.findIndex(h => h.includes('role'));
+            const assessIdx = headers.findIndex(h => h.includes('assess') || h.includes('note'));
+            const clientIdx = headers.findIndex(h => h.includes('linked') || h.includes('client'));
+            const statusIdx = headers.findIndex(h => h.includes('status'));
+            if(nameIdx === -1) { alert("CSV must have 'name' column"); return; }
+            let newCands = [];
+            for(let i=1; i<lines.length; i++) {
+                let cols = lines[i].match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g).map(c => c.replace(/^"|"$/g, '').trim());
+                if(cols.length > nameIdx) {
+                    newCands.push({
+                        id: Date.now() + i,
+                        name: cols[nameIdx] || '',
+                        role: roleIdx >=0 ? (cols[roleIdx] || '') : '',
+                        assessment: assessIdx >=0 ? (cols[assessIdx] || '') : '',
+                        linkedClient: clientIdx >=0 ? (cols[clientIdx] || '') : '',
+                        status: statusIdx >=0 ? (cols[statusIdx] || 'Active') : 'Active'
+                    });
+                }
+            }
+            if(newCands.length) {
+                candidates.push(...newCands);
+                saveAll();
+                alert(`Imported ${newCands.length} candidates.`);
+            } else alert('No valid rows found.');
+        };
+        reader.readAsText(file);
+    }
+
+    // Event bindings
+    document.getElementById('newMeetingBtn').onclick = () => openMeetingModal();
+    document.getElementById('saveMeetingBtn').onclick = saveMeeting;
+    document.getElementById('closeMeetingModal').onclick = () => document.getElementById('meetingModal').style.display = 'none';
+    document.getElementById('addCustomDateBtn').onclick = () => addCustomDateRow('', '', '');
+    document.getElementById('newCandidateBtn').onclick = () => openCandidateModal();
+    document.getElementById('saveCandidateBtn').onclick = saveCandidate;
+    document.getElementById('closeCandidateModal').onclick = () => document.getElementById('candidateModal').style.display = 'none';
+    document.getElementById('searchMeetings').oninput = () => renderMeetings();
+    document.getElementById('searchCandidates').oninput = () => renderCandidates();
+    document.getElementById('exportMeetingsBtn').onclick = exportMeetingsCSV;
+    document.getElementById('exportRemindersBtn').onclick = exportRemindersCSV;
+    document.getElementById('exportCandidatesBtn').onclick = exportCandidatesCSV;
+    document.getElementById('importCandidatesBtn').onclick = () => document.getElementById('candidateFileInput').click();
+    document.getElementById('candidateFileInput').onchange = (e) => { if(e.target.files[0]) importCandidatesFromCSV(e.target.files[0]); e.target.value = ''; };
+    window.onclick = (e) => { if(e.target.classList && e.target.classList.contains('modal')) e.target.style.display = 'none'; };
+    document.querySelectorAll('.tab').forEach(btn => {
+        btn.onclick = () => {
+            document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+            btn.classList.add('active');
+            document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+            document.getElementById(btn.dataset.tab+'Panel').classList.add('active');
+            if(btn.dataset.tab === 'reminders') renderReminders();
+        };
+    });
+    loadData();
+</script>
+</body>
+</html>
+```

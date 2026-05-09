@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Event Tracker | City-wise Candidates + Master View</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f1f5f9;
+            padding: 24px 20px;
+            color: #0f172a;
+        }
+
+        .app-container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 28px;
+            padding: 16px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            color: #1e4a6e;
+        }
+
+        .offline-badge {
+            background: #e6f7f0;
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            color: #2c7a4d;
+        }
+
+        /* Main Tabs: City Tabs + Master View */
+        .main-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+
+        .main-tab {
+            background: transparent;
+            border: none;
+            padding: 10px 24px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #475569;
+        }
+
+        .main-tab.active {
+            background: #1e5a7a;
+            color: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .main-tab:hover:not(.active) {
+            background: #e2e8f0;
+        }
+
+        /* City panels and master panel */
+        .city-panel, .master-panel {
+            display: none;
+            background: white;
+            border-radius: 28px;
+            padding: 24px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+        }
+
+        .city-panel.active, .master-panel.active {
+            display: block;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 24px;
+            align-items: center;
+        }
+
+        button {
+            background: #f1f5f9;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 40px;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: 0.1s;
+        }
+
+        .btn-primary {
+            background: #1e5a7a;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0f4662;
+        }
+
+        .btn-excel {
+            background: #2c7a4d;
+            color: white;
+        }
+
+        .btn-excel:hover {
+            background: #22653f;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            background: #f8fafc;
+            padding: 12px 16px;
+            border-radius: 60px;
+            margin-bottom: 20px;
+        }
+
+        .filter-bar select, .filter-bar input {
+            padding: 6px 12px;
+            border-radius: 40px;
+            border: 1px solid #cbd5e1;
+            background: white;
+            font-size: 0.8rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px 10px;
+            background: #f1f5f9;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        td {
+            padding: 10px 10px;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: middle;
+        }
+
+        select.status-dropdown {
+            padding: 6px 10px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            background: white;
+            border: 1px solid #cbd5e1;
+        }
+
+        /* Status background colors (soft, no emojis) */
+        .status-invite1 { background: #e0f2fe; color: #0369a1; }
+        .status-invite2 { background: #d9f99d; color: #3f6212; }
+        .status-followup1 { background: #fed7aa; color: #9a3412; }
+        .status-followup2 { background: #fde047; color: #854d0e; }
+        .status-confirmed { background: #a7f3d0; color: #065f46; }
+        .status-attended { background: #6ee7b7; color: #065f46; }
+        .status-denied { background: #fecaca; color: #991b1b; }
+        .status-notattended { background: #fecaca; color: #991b1b; }
+
+        .badge-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .delete-btn {
+            color: #dc2626;
+            background: none;
+            font-size: 1.1rem;
+            cursor: pointer;
+            border: none;
+        }
+
+        .email-link {
+            color: #1e5a7a;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 32px;
+            max-width: 550px;
+            width: 90%;
+            padding: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .flex-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .sample-email-text {
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 16px;
+            font-family: monospace;
+            font-size: 0.75rem;
+            margin-top: 8px;
+            border: 1px solid #cbd5e1;
+        }
+
+        @media (max-width: 700px) {
+            th, td { font-size: 0.7rem; padding: 8px 5px; }
+            .toolbar { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="header">
+        <h1>Event Tracker · City-wise Candidate Pipeline</h1>
+        <div class="offline-badge">Local storage | Excel Import/Export | Email Ready</div>
+    </div>
+
+    <!-- Main Tabs: City tabs + Master View -->
+    <div class="main-tabs" id="mainTabsContainer">
+        <button class="main-tab active" data-view="ggn">Gurgaon (GGN)</button>
+        <button class="main-tab" data-view="noida">Noida</button>
+        <button class="main-tab" data-view="blr1">Bangalore 1 (BLR-1)</button>
+        <button class="main-tab" data-view="blr2">Bangalore 2 (BLR-2)</button>
+        <button class="main-tab" data-view="mumbai">Mumbai</button>
+        <button class="main-tab" data-view="master">All Candidates (Master View)</button>
+    </div>
+
+    <!-- City panels -->
+    <div id="ggnPanel" class="city-panel active"></div>
+    <div id="noidaPanel" class="city-panel"></div>
+    <div id="blr1Panel" class="city-panel"></div>
+    <div id="blr2Panel" class="city-panel"></div>
+    <div id="mumbaiPanel" class="city-panel"></div>
+
+    <!-- Master Panel (All candidates together) -->
+    <div id="masterPanel" class="master-panel"></div>
+</div>
+
+<!-- Add Candidate Modal -->
+<div id="candidateModal" class="modal">
+    <div class="modal-content">
+        <h3 id="modalCityTitle">Add Candidate</h3>
+        <input type="hidden" id="modalCityName">
+        <div class="form-group"><label>Candidate Name *</label><input type="text" id="candName" placeholder="Full name"></div>
+        <div class="form-group"><label>Email Address (for Outlook)</label><input type="email" id="candEmail" placeholder="candidate@example.com"></div>
+        <div class="form-group"><label>Phone / Contact (optional)</label><input type="text" id="candContact" placeholder="Phone number"></div>
+        <div class="form-group"><label>Status</label>
+            <select id="candStatus">
+                <option value="invite1">Invite 1 Sent</option>
+                <option value="invite2">Invite 2 Sent</option>
+                <option value="followup1">Follow-up 1</option>
+                <option value="followup2">Follow-up 2</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="attended">Actually Attended</option>
+                <option value="denied">Denied</option>
+                <option value="notattended">Confirmed Not Attended</option>
+            </select>
+        </div>
+        <div class="flex-buttons"><button id="closeModalBtn">Cancel</button><button id="saveModalBtn" class="btn-primary">Save Candidate</button></div>
+    </div>
+</div>
+
+<script>
+    // Data structure: cities and candidates
+    let candidatesDB = {
+        ggn: [],
+        noida: [],
+        blr1: [],
+        blr2: [],
+        mumbai: []
+    };
+
+    // Load initial data from localStorage
+    function loadData() {
+        const stored = localStorage.getItem('event_city_tracker_v2');
+        if (stored) {
+            candidatesDB = JSON.parse(stored);
+        } else {
+            // sample data with email fields
+            const now = Date.now();
+            candidatesDB = {
+                ggn: [{ id: now, name: "Amit Sharma", email: "amit.sharma@example.com", contact: "9876543210", status: "confirmed" }],
+                noida: [{ id: now+1, name: "Neha Verma", email: "neha.verma@example.com", contact: "9876543211", status: "invite1" }],
+                blr1: [{ id: now+2, name: "Rahul Nair", email: "rahul.nair@example.com", contact: "9876543212", status: "attended" }],
+                blr2: [{ id: now+3, name: "Priya K", email: "priya.k@example.com", contact: "9876543213", status: "followup1" }],
+                mumbai: [{ id: now+4, name: "Sanjay M", email: "sanjay.m@example.com", contact: "9876543214", status: "denied" }]
+            };
+        }
+        renderAllCitiesAndMaster();
+    }
+
+    function saveToLocal() {
+        localStorage.setItem('event_city_tracker_v2', JSON.stringify(candidatesDB));
+    }
+
+    // Helper: status display label and class
+    function getStatusInfo(statusCode) {
+        const map = {
+            'invite1': { label: 'Invite 1 Sent', class: 'status-invite1' },
+            'invite2': { label: 'Invite 2 Sent', class: 'status-invite2' },
+            'followup1': { label: 'Follow-up 1', class: 'status-followup1' },
+            'followup2': { label: 'Follow-up 2', class: 'status-followup2' },
+            'confirmed': { label: 'Confirmed', class: 'status-confirmed' },
+            'attended': { label: 'Actually Attended', class: 'status-attended' },
+            'denied': { label: 'Denied', class: 'status-denied' },
+            'notattended': { label: 'Confirmed Not Attended', class: 'status-notattended' }
+        };
+        return map[statusCode] || { label: statusCode, class: '' };
+    }
+
+    // Email template function: "Good morning [Name], the SV team would like to invite you to our annual event..."
+    function getEmailTemplate(candidateName) {
+        return `Good morning ${candidateName}, the SV team would like to invite you to our annual event. We look forward to your presence. Please confirm your attendance at your earliest convenience.`;
+    }
+
+    // Open Outlook mailto: with pre-filled subject and body
+    function openOutlookEmail(emailAddress, candidateName) {
+        if (!emailAddress || emailAddress.trim() === '') {
+            alert("No email address available for this candidate. Please add an email.");
+            return;
+        }
+        const subject = "Invitation to SV Annual Event";
+        const body = getEmailTemplate(candidateName);
+        const mailtoLink = `mailto:${encodeURIComponent(emailAddress)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        window.location.href = mailtoLink;
+    }
+
+    // Render specific city table
+    function renderCityTable(city) {
+        const panel = document.getElementById(`${city}Panel`);
+        if (!panel) return;
+        const statusFilter = panel.querySelector('.status-filter-select')?.value || 'all';
+        const searchTerm = panel.querySelector('.search-candidate')?.value.toLowerCase() || '';
+        let candidates = [...candidatesDB[city]];
+        if (statusFilter !== 'all') {
+            candidates = candidates.filter(c => c.status === statusFilter);
+        }
+        if (searchTerm) {
+            candidates = candidates.filter(c => c.name.toLowerCase().includes(searchTerm) || (c.email || '').toLowerCase().includes(searchTerm) || (c.contact || '').toLowerCase().includes(searchTerm));
+        }
+        candidates.sort((a,b) => a.id - b.id);
+        const tbody = panel.querySelector('.candidates-tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        for (let cand of candidates) {
+            const row = tbody.insertRow();
+            row.insertCell(0).innerHTML = `<strong>${escapeHtml(cand.name)}</strong>`;
+            // Email cell with clickable link that opens Outlook
+            const emailCell = row.insertCell(1);
+            if (cand.email && cand.email.trim()) {
+                const emailLink = document.createElement('span');
+                emailLink.className = 'email-link';
+                emailLink.innerText = cand.email;
+                emailLink.style.cursor = 'pointer';
+                emailLink.style.color = '#1e5a7a';
+                emailLink.style.textDecoration = 'underline';
+                emailLink.onclick = (function(email, name) {
+                    return function() { openOutlookEmail(email, name); };
+                })(cand.email, cand.name);
+                emailCell.appendChild(emailLink);
+            } else {
+                emailCell.innerText = '—';
+            }
+            row.insertCell(2).innerText = cand.contact || '—';
+            // Status dropdown
+            const statusSelect = document.createElement('select');
+            statusSelect.className = 'status-dropdown';
+            const statusOptions = [
+                { val: 'invite1', label: 'Invite 1 Sent' },
+                { val: 'invite2', label: 'Invite 2 Sent' },
+                { val: 'followup1', label: 'Follow-up 1' },
+                { val: 'followup2', label: 'Follow-up 2' },
+                { val: 'confirmed', label: 'Confirmed' },
+                { val: 'attended', label: 'Actually Attended' },
+                { val: 'denied', label: 'Denied' },
+                { val: 'notattended', label: 'Confirmed Not Attended' }
+            ];
+            statusOptions.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt.val;
+                option.textContent = opt.label;
+                if (cand.status === opt.val) option.selected = true;
+                statusSelect.appendChild(option);
+            });
+            statusSelect.onchange = (function(cityId, candId, newVal) {
+                return function() { updateStatus(cityId, candId, this.value); };
+            })(city, cand.id, statusSelect.value);
+            row.insertCell(3).appendChild(statusSelect);
+            // Actions: delete button + manual email button
+            const actionsCell = row.insertCell(4);
+            const emailBtn = document.createElement('button');
+            emailBtn.innerText = '✉️ Email';
+            emailBtn.title = 'Send invitation email';
+            emailBtn.style.background = '#e0f2fe';
+            emailBtn.style.border = 'none';
+            emailBtn.style.borderRadius = '40px';
+            emailBtn.style.padding = '4px 10px';
+            emailBtn.style.marginRight = '8px';
+            emailBtn.style.cursor = 'pointer';
+            emailBtn.onclick = (function(email, name) {
+                return function() { openOutlookEmail(email, name); };
+            })(cand.email, cand.name);
+            const delBtn = document.createElement('button');
+            delBtn.innerText = 'Delete';
+            delBtn.className = 'delete-btn';
+            delBtn.style.background = '#fee2e2';
+            delBtn.style.padding = '4px 10px';
+            delBtn.style.borderRadius = '40px';
+            delBtn.style.cursor = 'pointer';
+            delBtn.onclick = (function(cityId, candId) {
+                return function() { deleteCandidate(cityId, candId); };
+            })(city, cand.id);
+            actionsCell.appendChild(emailBtn);
+            actionsCell.appendChild(delBtn);
+        }
+        const totalSpan = panel.querySelector('.total-count');
+        if (totalSpan) totalSpan.innerText = candidates.length;
+    }
+
+    // Update status for a candidate
+    function updateStatus(city, candId, newStatus) {
+        const idx = candidatesDB[city].findIndex(c => c.id === candId);
+        if (idx !== -1) {
+            candidatesDB[city][idx].status = newStatus;
+            saveToLocal();
+            renderCityTable(city);
+            renderMasterView(); // keep master view updated
+        }
+    }
+
+    function deleteCandidate(city, candId) {
+        if (confirm('Remove this candidate?')) {
+            candidatesDB[city] = candidatesDB[city].filter(c => c.id !== candId);
+            saveToLocal();
+            renderCityTable(city);
+            renderMasterView();
+        }
+    }
+
+    function addCandidate(city, name, email, contact, status) {
+        if (!name.trim()) { alert("Candidate name required"); return false; }
+        const newId = Date.now() + Math.floor(Math.random() * 10000);
+        candidatesDB[city].push({
+            id: newId,
+            name: name.trim(),
+            email: email.trim(),
+            contact: contact.trim(),
+            status: status
+        });
+        saveToLocal();
+        renderCityTable(city);
+        renderMasterView();
+        return true;
+    }
+
+    // Import CSV for specific city: columns: Name, Email, Contact, Status (optional)
+    function importCsvForCity(city, file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const text = e.target.result;
+            const lines = text.split(/\r?\n/).filter(l => l.trim());
+            if (lines.length < 2) { alert("CSV must have header and data rows"); return; }
+            let newCandidates = [];
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
+                if (cols.length >= 1 && cols[0]) {
+                    let name = cols[0];
+                    let email = cols.length > 1 ? cols[1] : '';
+                    let contact = cols.length > 2 ? cols[2] : '';
+                    let status = 'invite1';
+                    if (cols.length > 3 && cols[3]) {
+                        const statusLower = cols[3].toLowerCase();
+                        if (statusLower.includes('invite2')) status = 'invite2';
+                        else if (statusLower.includes('followup1')) status = 'followup1';
+                        else if (statusLower.includes('followup2')) status = 'followup2';
+                        else if (statusLower.includes('confirm')) status = 'confirmed';
+                        else if (statusLower.includes('attend')) status = 'attended';
+                        else if (statusLower.includes('denied')) status = 'denied';
+                        else if (statusLower.includes('notattend')) status = 'notattended';
+                        else status = 'invite1';
+                    }
+                    newCandidates.push({
+                        id: Date.now() + i + Math.random(),
+                        name: name,
+                        email: email,
+                        contact: contact,
+                        status: status
+                    });
+                }
+            }
+            if (newCandidates.length) {
+                candidatesDB[city] = [...candidatesDB[city], ...newCandidates];
+                saveToLocal();
+                renderCityTable(city);
+                renderMasterView();
+                alert(`Imported ${newCandidates.length} candidates to ${city.toUpperCase()}`);
+            } else { alert("No valid data found. Format: Name, Email, Contact, Status (optional)"); }
+        };
+        reader.readAsText(file);
+    }
+
+    function exportCityToCSV(city) {
+        const candidates = candidatesDB[city];
+        const rows = [['Name', 'Email', 'Contact', 'Status']];
+        for (let c of candidates) {
+            const statusLabel = getStatusInfo(c.status).label;
+            rows.push([c.name, c.email || '', c.contact || '', statusLabel]);
+        }
+        const csvContent = rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob([csvContent], {type: 'text/csv'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${city}_candidates_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+
+    // Master View: show all candidates from all cities together
+    function renderMasterView() {
+        const masterPanel = document.getElementById('masterPanel');
+        if (!masterPanel) return;
+        // Build master UI if empty
+        if (!masterPanel.querySelector('.master-toolbar')) {
+            masterPanel.innerHTML = `
+                <div class="toolbar master-toolbar">
+                    <div style="display: flex; gap: 10px;">
+                        <button id="masterExportBtn" class="btn-excel">Export All Candidates CSV</button>
+                    </div>
+                </div>
+                <div class="filter-bar">
+                    <span>Filter by City:</span>
+                    <select id="masterCityFilter" class="status-filter-select">
+                        <option value="all">All Cities</option>
+                        <option value="ggn">Gurgaon</option>
+                        <option value="noida">Noida</option>
+                        <option value="blr1">Bangalore 1</option>
+                        <option value="blr2">Bangalore 2</option>
+                        <option value="mumbai">Mumbai</option>
+                    </select>
+                    <input type="text" id="masterSearch" placeholder="Search name, email" style="width: 200px;">
+                    <select id="masterStatusFilter">
+                        <option value="all">All Status</option>
+                        <option value="invite1">Invite 1 Sent</option>
+                        <option value="invite2">Invite 2 Sent</option>
+                        <option value="followup1">Follow-up 1</option>
+                        <option value="followup2">Follow-up 2</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="attended">Actually Attended</option>
+                        <option value="denied">Denied</option>
+                        <option value="notattended">Confirmed Not Attended</option>
+                    </select>
+                    <span>Total: <span id="masterTotalCount">0</span></span>
+                </div>
+                <div class="table-wrapper" style="overflow-x: auto;">
+                    <table style="min-width: 700px;">
+                        <thead>
+                            <tr><th>City</th><th>Name</th><th>Email</th><th>Contact</th><th>Status</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody id="masterTbody"></tbody>
+                    </table>
+                </div>
+                <div class="sample-email-text">
+                    <strong>Email Template (Outlook ready):</strong><br>
+                    "Good morning [Candidate Name], the SV team would like to invite you to our annual event. We look forward to your presence. Please confirm your attendance at your earliest convenience."
+                </div>
+            `;
+            document.getElementById('masterExportBtn')?.addEventListener('click', () => exportMasterToCSV());
+            document.getElementById('masterCityFilter')?.addEventListener('change', () => renderMasterView());
+            document.getElementById('masterSearch')?.addEventListener('input', () => renderMasterView());
+            document.getElementById('masterStatusFilter')?.addEventListener('change', () => renderMasterView());
+        }
+        // Gather all candidates
+        let allCandidates = [];
+        const cityNames = { ggn: 'Gurgaon', noida: 'Noida', blr1: 'Bangalore 1', blr2: 'Bangalore 2', mumbai: 'Mumbai' };
+        for (let [cityKey, cityCands] of Object.entries(candidatesDB)) {
+            for (let cand of cityCands) {
+                allCandidates.push({ ...cand, cityKey, cityDisplay: cityNames[cityKey] });
+            }
+        }
+        // Apply filters
+        const cityFilter = document.getElementById('masterCityFilter')?.value || 'all';
+        const searchText = document.getElementById('masterSearch')?.value.toLowerCase() || '';
+        const statusFilter = document.getElementById('masterStatusFilter')?.value || 'all';
+        let filtered = allCandidates.filter(c => {
+            if (cityFilter !== 'all' && c.cityKey !== cityFilter) return false;
+            if (statusFilter !== 'all' && c.status !== statusFilter) return false;
+            if (searchText && !c.name.toLowerCase().includes(searchText) && !(c.email || '').toLowerCase().includes(searchText)) return false;
+            return true;
+        });
+        filtered.sort((a,b) => a.id - b.id);
+        const tbody = document.getElementById('masterTbody');
+        if (tbody) {
+            tbody.innerHTML = '';
+            for (let cand of filtered) {
+                const row = tbody.insertRow();
+                row.insertCell(0).innerText = cand.cityDisplay;
+                row.insertCell(1).innerHTML = `<strong>${escapeHtml(cand.name)}</strong>`;
+                // email clickable
+                const emailCell = row.insertCell(2);
+                if (cand.email && cand.email.trim()) {
+                    const emailLink = document.createElement('span');
+                    emailLink.className = 'email-link';
+                    emailLink.innerText = cand.email;
+                    emailLink.style.cursor = 'pointer';
+                    emailLink.style.color = '#1e5a7a';
+                    emailLink.style.textDecoration = 'underline';
+                    emailLink.onclick = (function(email, name) {
+                        return function() { openOutlookEmail(email, name); };
+                    })(cand.email, cand.name);
+                    emailCell.appendChild(emailLink);
+                } else { emailCell.innerText = '—'; }
+                row.insertCell(3).innerText = cand.contact || '—';
+                const statusInfo = getStatusInfo(cand.status);
+                row.insertCell(4).innerHTML = `<span class="badge-status ${statusInfo.class}">${statusInfo.label}</span>`;
+                const actionsCell = row.insertCell(5);
+                const emailActionBtn = document.createElement('button');
+                emailActionBtn.innerText = '✉️ Email';
+                emailActionBtn.style.background = '#e0f2fe';
+                emailActionBtn.style.border = 'none';
+                emailActionBtn.style.borderRadius = '40px';
+                emailActionBtn.style.padding = '4px 10px';
+                emailActionBtn.style.marginRight = '8px';
+                emailActionBtn.style.cursor = 'pointer';
+                emailActionBtn.onclick = (function(email, name) {
+                    return function() { openOutlookEmail(email, name); };
+                })(cand.email, cand.name);
+                actionsCell.appendChild(emailActionBtn);
+            }
+            document.getElementById('masterTotalCount').innerText = filtered.length;
+        }
+    }
+
+    function exportMasterToCSV() {
+        let allRows = [['City', 'Name', 'Email', 'Contact', 'Status']];
+        const cityNames = { ggn: 'Gurgaon', noida: 'Noida', blr1: 'Bangalore 1', blr2: 'Bangalore 2', mumbai: 'Mumbai' };
+        for (let [cityKey, cityCands] of Object.entries(candidatesDB)) {
+            for (let c of cityCands) {
+                const statusLabel = getStatusInfo(c.status).label;
+                allRows.push([cityNames[cityKey], c.name, c.email || '', c.contact || '', statusLabel]);
+            }
+        }
+        const csvContent = allRows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob([csvContent], {type: 'text/csv'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `all_candidates_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+
+    function renderAllCitiesAndMaster() {
+        const cities = ['ggn', 'noida', 'blr1', 'blr2', 'mumbai'];
+        cities.forEach(city => {
+            const panel = document.getElementById(`${city}Panel`);
+            if (panel) {
+                panel.innerHTML = generateCityPanelHTML(city);
+                attachCityEvents(city);
+                renderCityTable(city);
+            }
+        });
+        renderMasterView();
+    }
+
+    function generateCityPanelHTML(city) {
+        const cityUpper = city.toUpperCase();
+        return `
+            <div class="toolbar">
+                <button class="btn-primary add-candidate-btn" data-city="${city}">Add Candidate</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-excel import-excel-btn" data-city="${city}">Import CSV (Excel)</button>
+                    <button class="btn-excel export-csv-btn" data-city="${city}">Export to CSV</button>
+                    <input type="file" class="import-file-input" data-city="${city}" accept=".csv" style="display:none;">
+                </div>
+            </div>
+            <div class="filter-bar">
+                <span>Filter:</span>
+                <input type="text" class="search-candidate" placeholder="Search name / email" style="width: 180px;">
+                <select class="status-filter-select">
+                    <option value="all">All Status</option>
+                    <option value="invite1">Invite 1 Sent</option>
+                    <option value="invite2">Invite 2 Sent</option>
+                    <option value="followup1">Follow-up 1</option>
+                    <option value="followup2">Follow-up 2</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="attended">Actually Attended</option>
+                    <option value="denied">Denied</option>
+                    <option value="notattended">Confirmed Not Attended</option>
+                </select>
+                <span>Total: <span class="total-count">0</span> candidates</span>
+            </div>
+            <div class="table-wrapper" style="overflow-x: auto;">
+                <table style="min-width: 650px;">
+                    <thead><tr><th>Name</th><th>Email (click to email)</th><th>Contact</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody class="candidates-tbody"></tbody>
+                </table>
+            </div>
+            <div class="sample-email-text">
+                <strong>Email Template (Outlook ready):</strong><br>
+                "Good morning [Candidate Name], the SV team would like to invite you to our annual event. We look forward to your presence. Please confirm your attendance at your earliest convenience."
+            </div>
+        `;
+    }
+
+    function attachCityEvents(city) {
+        const panel = document.getElementById(`${city}Panel`);
+        if (!panel) return;
+        const addBtn = panel.querySelector('.add-candidate-btn');
+        if (addBtn) addBtn.onclick = () => openModalForCity(city);
+        const importBtn = panel.querySelector('.import-excel-btn');
+        const fileInput = panel.querySelector('.import-file-input');
+        if (importBtn && fileInput) {
+            importBtn.onclick = () => fileInput.click();
+            fileInput.onchange = (e) => {
+                if (e.target.files[0]) importCsvForCity(city, e.target.files[0]);
+                e.target.value = '';
+            };
+        }
+        const exportBtn = panel.querySelector('.export-csv-btn');
+        if (exportBtn) exportBtn.onclick = () => exportCityToCSV(city);
+        const searchInput = panel.querySelector('.search-candidate');
+        if (searchInput) searchInput.oninput = () => renderCityTable(city);
+        const statusFilter = panel.querySelector('.status-filter-select');
+        if (statusFilter) statusFilter.onchange = () => renderCityTable(city);
+    }
+
+    let currentModalCity = '';
+    function openModalForCity(city) {
+        currentModalCity = city;
+        document.getElementById('modalCityTitle').innerText = `Add Candidate - ${city.toUpperCase()}`;
+        document.getElementById('modalCityName').value = city;
+        document.getElementById('candName').value = '';
+        document.getElementById('candEmail').value = '';
+        document.getElementById('candContact').value = '';
+        document.getElementById('candStatus').value = 'invite1';
+        document.getElementById('candidateModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('candidateModal').style.display = 'none';
+    }
+
+    function saveModalCandidate() {
+        const name = document.getElementById('candName').value.trim();
+        const email = document.getElementById('candEmail').value.trim();
+        const contact = document.getElementById('candContact').value.trim();
+        const status = document.getElementById('candStatus').value;
+        if (!name) { alert("Candidate name required"); return; }
+        addCandidate(currentModalCity, name, email, contact, status);
+        closeModal();
+    }
+
+    function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+
+    // Tab switching between city views and master view
+    function switchView(viewId) {
+        document.querySelectorAll('.city-panel, .master-panel').forEach(panel => panel.classList.remove('active'));
+        if (viewId === 'master') {
+            document.getElementById('masterPanel').classList.add('active');
+            renderMasterView();
+        } else {
+            const panel = document.getElementById(`${viewId}Panel`);
+            if (panel) panel.classList.add('active');
+            renderCityTable(viewId);
+        }
+        document.querySelectorAll('.main-tab').forEach(tab => tab.classList.remove('active'));
+        document.querySelector(`.main-tab[data-view="${viewId}"]`).classList.add('active');
+    }
+
+    // Event listeners
+    function init() {
+        loadData();
+        document.querySelectorAll('.main-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                const view = tab.getAttribute('data-view');
+                switchView(view);
+            });
+        });
+        document.getElementById('closeModalBtn').onclick = closeModal;
+        document.getElementById('saveModalBtn').onclick = saveModalCandidate;
+        window.onclick = (e) => { if (e.target === document.getElementById('candidateModal')) closeModal(); };
+    }
+    init();
+</script>
+</body>
+</html>
+```
